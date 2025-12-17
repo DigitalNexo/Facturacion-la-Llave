@@ -1,0 +1,627 @@
+// ========================================
+// FACTURACIÓN LA LLAVE - PRISMA SCHEMA
+// Sistema Informático de Facturación (FLL-SIF)
+// Productor: Búfalo Easy Trade, S.L. (B86634235)
+// ========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// 1. ACCOUNTS & USERS
+// ========================================
+
+enum AccountType {
+  self_employed  // Autónomo
+  company        // Empresa
+  advisor        // Asesor/Gestor (solo creado por admin)
+}
+
+enum AccountStatus {
+  trialing       // En período de prueba (15 días)
+  active         // Activo y pagando
+  past_due       // Pago atrasado
+  canceled       // Cancelado
+  blocked        // Bloqueado (trial expirado sin pago)
+}
+
+model Account {
+  id                   String         @id @default(uuid())
+  accountType          AccountType    @map("account_type")
+  status               AccountStatus  @default(trialing)
+  isBillingEnabled     Boolean        @default(true) @map("is_billing_enabled")
+  
+  // Trial
+  trialEndsAt          DateTime?      @map("trial_ends_at")
+  
+  // Stripe
+  stripeCustomerId     String?        @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?        @unique @map("stripe_subscription_id")
+  
+  // Bloqueo
+  blockedReason        String?        @map("blocked_reason")
+  blockedAt            DateTime?      @map("blocked_at")
+  
+  // Relaciones
+  users                User[]
+  tenants              Tenant[]
+  subscription         Subscription?
+  advisorProfile       AdvisorProfile?
+  usageCounters        UsageCounter[]
+  
+  // Auditoría
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  @@map("accounts")
+}
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  name               String?
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  isActive           Boolean   @default(true) @map("is_active")
+  isSuperAdmin       Boolean   @default(false) @map("is_super_admin")
+  
+  // Relaciones
+  accountId          String    @map("account_id")
+  account            Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  tenantAccesses     TenantAccess[]
+  auditEvents        AuditEvent[]
+  accessRequests     AccessRequest[]
+  
+  // Auditoría
+  lastLoginAt        DateTime? @map("last_login_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@index([accountId])
+  @@map("users")
+}
+
+// ========================================
+// 2. PLANS & SUBSCRIPTIONS
+// ========================================
+
+model Plan {
+  id                    String         @id @default(uuid())
+  name                  String         @unique
+  code                  String         @unique  // AUTONOMO, EMPRESA_BASIC, etc.
+  description           String?
+  
+  // Límites
+  maxTenants            Int?           @map("max_tenants")        // null = ilimitado
+  maxUsers              Int?           @map("max_users")
+  maxInvoicesPerMonth   Int?           @map("max_invoices_per_month")
+  maxStorageMb          Int?           @map("max_storage_mb")
+  
+  // Precio (informativo, real está en Stripe)
+  priceMonthly          Decimal?       @map("price_monthly") @db.Decimal(10, 2)
+  stripePriceId         String?        @map("stripe_price_id")
+  
+  isActive              Boolean        @default(true) @map("is_active")
+  
+  // Relaciones
+  subscriptions         Subscription[]
+  
+  // Auditoría
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                    String    @id @default(uuid())
+  
+  // Relaciones
+  accountId             String    @unique @map("account_id")
+  account               Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  planId                String    @map("plan_id")
+  plan                  Plan      @relation(fields: [planId], references: [id])
+  
+  // Fechas
+  currentPeriodStart    DateTime? @map("current_period_start")
+  currentPeriodEnd      DateTime? @map("current_period_end")
+  canceledAt            DateTime? @map("canceled_at")
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([accountId])
+  @@index([planId])
+  @@map("subscriptions")
+}
+
+// ========================================
+// 3. ADVISORS (GESTORES)
+// ========================================
+
+model AdvisorProfile {
+  id                    String    @id @default(uuid())
+  
+  // Relación
+  accountId             String    @unique @map("account_id")
+  account               Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // Datos del gestor
+  companyName           String?   @map("company_name")
+  taxId                 String?   @unique @map("tax_id")
+  professionalNumber    String?   @map("professional_number")
+  
+  // Verificación
+  isVerified            Boolean   @default(false) @map("is_verified")
+  verifiedAt            DateTime? @map("verified_at")
+  verifiedBy            String?   @map("verified_by")
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@map("advisor_profiles")
+}
+
+// ========================================
+// 4. TENANTS (EMPRESAS/OBLIGADOS)
+// ========================================
+
+model Tenant {
+  id                    String    @id @default(uuid())
+  
+  // Relación con cuenta
+  accountId             String    @map("account_id")
+  account               Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // Datos fiscales
+  taxId                 String    @unique @map("tax_id")  // CIF/NIF
+  businessName          String    @map("business_name")
+  tradeName             String?   @map("trade_name")
+  
+  // Dirección
+  address               String?
+  postalCode            String?   @map("postal_code")
+  city                  String?
+  province              String?
+  country               String    @default("ES")
+  
+  // VERI*FACTU
+  verifactuMode         String    @default("disabled") @map("verifactu_mode")  // disabled | enabled
+  
+  isActive              Boolean   @default(true) @map("is_active")
+  
+  // Relaciones
+  invoiceSeries         InvoiceSeries[]
+  invoices              Invoice[]
+  customers             Customer[]
+  tenantAccesses        TenantAccess[]
+  accessRequests        AccessRequest[]
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@unique([accountId, taxId])
+  @@index([accountId])
+  @@map("tenants")
+}
+
+// ========================================
+// 5. PERMISSIONS & ACCESS
+// ========================================
+
+model PermissionSet {
+  id                    String    @id @default(uuid())
+  name                  String
+  permissions           String[]  // Array de permisos (invoices.read, etc.)
+  
+  // Relaciones
+  tenantAccesses        TenantAccess[]
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@map("permission_sets")
+}
+
+model TenantAccess {
+  id                    String    @id @default(uuid())
+  
+  // Relaciones
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  tenantId              String    @map("tenant_id")
+  tenant                Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  permissionSetId       String?   @map("permission_set_id")
+  permissionSet         PermissionSet? @relation(fields: [permissionSetId], references: [id])
+  
+  isActive              Boolean   @default(true) @map("is_active")
+  
+  // Auditoría
+  grantedBy             String?   @map("granted_by")
+  grantedAt             DateTime  @default(now()) @map("granted_at")
+  revokedAt             DateTime? @map("revoked_at")
+  
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@map("tenant_accesses")
+}
+
+model AccessRequest {
+  id                    String    @id @default(uuid())
+  
+  // Relaciones
+  requesterId           String    @map("requester_id")
+  requester             User      @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  
+  tenantId              String    @map("tenant_id")
+  tenant                Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  status                String    @default("pending")  // pending | approved | rejected
+  message               String?
+  
+  // Respuesta
+  respondedBy           String?   @map("responded_by")
+  respondedAt           DateTime? @map("responded_at")
+  responseMessage       String?   @map("response_message")
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([requesterId])
+  @@index([tenantId])
+  @@map("access_requests")
+}
+
+// ========================================
+// 6. CUSTOMERS (CLIENTES DEL TENANT)
+// ========================================
+
+model Customer {
+  id                    String    @id @default(uuid())
+  
+  // Relación
+  tenantId              String    @map("tenant_id")
+  tenant                Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Datos
+  taxId                 String?   @map("tax_id")
+  businessName          String?   @map("business_name")
+  name                  String?
+  email                 String?
+  phone                 String?
+  
+  // Dirección
+  address               String?
+  postalCode            String?   @map("postal_code")
+  city                  String?
+  province              String?
+  country               String    @default("ES")
+  
+  isActive              Boolean   @default(true) @map("is_active")
+  
+  // Relaciones
+  invoices              Invoice[]
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tenantId, taxId])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+// ========================================
+// 7. INVOICE SERIES (SERIES DE FACTURACIÓN)
+// ========================================
+
+model InvoiceSeries {
+  id                    String    @id @default(uuid())
+  
+  // Relación
+  tenantId              String    @map("tenant_id")
+  tenant                Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Datos
+  code                  String    // 2024, 2024-A, etc.
+  name                  String?
+  prefix                String?   // FRA, RECT, etc.
+  
+  // Numeración
+  currentNumber         Int       @default(0) @map("current_number")
+  
+  isDefault             Boolean   @default(false) @map("is_default")
+  isActive              Boolean   @default(true) @map("is_active")
+  
+  // Relaciones
+  invoices              Invoice[]
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("invoice_series")
+}
+
+// ========================================
+// 8. INVOICES (FACTURAS)
+// ========================================
+
+enum InvoiceType {
+  regular       // Factura normal
+  rectifying    // Factura rectificativa
+  simplified    // Factura simplificada
+}
+
+enum InvoiceStatus {
+  draft         // Borrador (editable)
+  issued        // Emitida (bloqueada)
+  rectified     // Rectificada
+  voided        // Anulada
+}
+
+model Invoice {
+  id                    String         @id @default(uuid())
+  
+  // Relación con tenant
+  tenantId              String         @map("tenant_id")
+  tenant                Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Relación con serie
+  seriesId              String         @map("series_id")
+  series                InvoiceSeries  @relation(fields: [seriesId], references: [id])
+  
+  // Relación con cliente
+  customerId            String?        @map("customer_id")
+  customer              Customer?      @relation(fields: [customerId], references: [id])
+  
+  // Numeración
+  number                Int
+  fullNumber            String         @map("full_number")  // Serie + Número completo
+  
+  // Tipo y estado
+  type                  InvoiceType    @default(regular)
+  status                InvoiceStatus  @default(draft)
+  
+  // Fechas
+  issueDate             DateTime?      @map("issue_date")
+  dueDate               DateTime?      @map("due_date")
+  
+  // Importes
+  subtotal              Decimal        @db.Decimal(10, 2)
+  taxAmount             Decimal        @map("tax_amount") @db.Decimal(10, 2)
+  total                 Decimal        @db.Decimal(10, 2)
+  
+  // Datos cliente (snapshot)
+  customerTaxId         String?        @map("customer_tax_id")
+  customerName          String?        @map("customer_name")
+  customerAddress       String?        @map("customer_address")
+  
+  // Bloqueo
+  lockedAt              DateTime?      @map("locked_at")
+  lockedBy              String?        @map("locked_by")
+  
+  // PDF
+  pdfPath               String?        @map("pdf_path")
+  pdfHash               String?        @map("pdf_hash")
+  
+  // Relaciones
+  lines                 InvoiceLine[]
+  records               InvoiceRecord[]
+  
+  // Auditoría
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  @@unique([tenantId, seriesId, number])
+  @@index([tenantId])
+  @@index([seriesId])
+  @@index([customerId])
+  @@index([status])
+  @@map("invoices")
+}
+
+// ========================================
+// 9. INVOICE LINES (LÍNEAS DE FACTURA)
+// ========================================
+
+model InvoiceLine {
+  id                    String    @id @default(uuid())
+  
+  // Relación
+  invoiceId             String    @map("invoice_id")
+  invoice               Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  // Orden
+  lineNumber            Int       @map("line_number")
+  
+  // Producto/Servicio
+  description           String
+  quantity              Decimal   @db.Decimal(10, 2)
+  unitPrice             Decimal   @map("unit_price") @db.Decimal(10, 2)
+  
+  // Impuestos
+  taxRate               Decimal   @map("tax_rate") @db.Decimal(5, 2)
+  taxAmount             Decimal   @map("tax_amount") @db.Decimal(10, 2)
+  
+  // Totales
+  subtotal              Decimal   @db.Decimal(10, 2)
+  total                 Decimal   @db.Decimal(10, 2)
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([invoiceId])
+  @@map("invoice_lines")
+}
+
+// ========================================
+// 10. INVOICE RECORDS (REGISTRO LEGAL RRSIF)
+// ========================================
+
+enum RecordEventType {
+  creation      // Alta
+  rectification // Rectificación
+  void          // Anulación
+}
+
+model InvoiceRecord {
+  id                    String           @id @default(uuid())
+  
+  // Relación
+  invoiceId             String           @map("invoice_id")
+  invoice               Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  // Tipo de evento
+  eventType             RecordEventType  @map("event_type")
+  
+  // Hash encadenado
+  hash                  String           @unique
+  prevHash              String?          @map("prev_hash")
+  prevRecordId          String?          @map("prev_record_id")
+  previousRecord        InvoiceRecord?   @relation("RecordChain", fields: [prevRecordId], references: [id])
+  nextRecords           InvoiceRecord[]  @relation("RecordChain")
+  
+  // Payload completo del registro
+  recordPayload         Json             @map("record_payload")
+  
+  // Sistema
+  systemId              String           @map("system_id")
+  systemVersion         String           @map("system_version")
+  
+  // Auditoría
+  recordedAt            DateTime         @default(now()) @map("recorded_at")
+  recordedBy            String           @map("recorded_by")
+
+  @@index([invoiceId])
+  @@index([prevRecordId])
+  @@map("invoice_records")
+}
+
+// ========================================
+// 11. VERI*FACTU SUBMISSIONS (COLA DE ENVÍO AEAT)
+// ========================================
+
+enum SubmissionStatus {
+  pending       // Pendiente de envío
+  sending       // Enviando
+  sent          // Enviado correctamente
+  error         // Error en envío
+  retry         // Reintentando
+}
+
+model VerifactuSubmission {
+  id                    String           @id @default(uuid())
+  
+  // Relación con registro
+  recordId              String           @map("record_id")
+  
+  // Estado
+  status                SubmissionStatus @default(pending)
+  
+  // Reintentos
+  attempts              Int              @default(0)
+  maxAttempts           Int              @default(3) @map("max_attempts")
+  
+  // Respuesta AEAT
+  aeatResponse          Json?            @map("aeat_response")
+  errorMessage          String?          @map("error_message")
+  
+  // Fechas
+  lastAttemptAt         DateTime?        @map("last_attempt_at")
+  sentAt                DateTime?        @map("sent_at")
+  
+  // Auditoría
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  @@index([recordId])
+  @@index([status])
+  @@map("verifactu_submissions")
+}
+
+// ========================================
+// 12. AUDIT EVENTS (AUDITORÍA DE ACCIONES)
+// ========================================
+
+model AuditEvent {
+  id                    String    @id @default(uuid())
+  
+  // Relación con usuario
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Evento
+  eventType             String    @map("event_type")  // login, invoice.create, etc.
+  entityType            String?   @map("entity_type") // invoice, customer, etc.
+  entityId              String?   @map("entity_id")
+  
+  // Detalles
+  action                String
+  metadata              Json?
+  
+  // IP y contexto
+  ipAddress             String?   @map("ip_address")
+  userAgent             String?   @map("user_agent")
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_events")
+}
+
+// ========================================
+// 13. USAGE COUNTERS (CONTADORES DE USO)
+// ========================================
+
+model UsageCounter {
+  id                    String    @id @default(uuid())
+  
+  // Relación con cuenta
+  accountId             String    @map("account_id")
+  account               Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  // Periodo (año-mes)
+  period                String    // formato: YYYY-MM
+  
+  // Contadores
+  tenantsCount          Int       @default(0) @map("tenants_count")
+  usersCount            Int       @default(0) @map("users_count")
+  invoicesCount         Int       @default(0) @map("invoices_count")
+  storageMb             Int       @default(0) @map("storage_mb")
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@unique([accountId, period])
+  @@index([accountId])
+  @@index([period])
+  @@map("usage_counters")
+}
