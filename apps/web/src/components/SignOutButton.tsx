@@ -7,13 +7,20 @@
 
 import { signOut } from 'next-auth/react';
 
-export function SignOutButton() {
+interface SignOutButtonProps {
+  className?: string;
+  showText?: boolean;
+}
+
+export function SignOutButton({ className, showText = true }: SignOutButtonProps) {
   return (
     <button
       onClick={() => signOut({ callbackUrl: '/login' })}
-      className="text-sm text-red-600 hover:text-red-500"
+      className={className || "text-sm text-red-600 hover:text-red-500"}
+      title="Cerrar sesión"
     >
-      Cerrar sesión
+      <span className="text-xl">🚪</span>
+      {showText && <span className="ml-3">Cerrar Sesión</span>}
     </button>
   );
 }

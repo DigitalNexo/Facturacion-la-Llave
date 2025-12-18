@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { SignOutButton } from '@/components/SignOutButton';
 import { VerifyAdvisorButton, RevokeVerificationButton } from '@/components/admin/VerifyAdvisorButton';
 import { ApproveRequestButton, RejectRequestButton } from '@/components/admin/AccessRequestButtons';
+import { DeleteAdvisorButton, ChangePasswordButton } from '@/components/admin/AdvisorActionButtons';
+import { AdvisorSearchBar } from '@/components/admin/AdvisorSearchBar';
 
 const prisma = new PrismaClient();
 
@@ -13,8 +15,13 @@ const prisma = new PrismaClient();
  * PANEL DE ADMINISTRACIÓN
  * Solo accesible para superadmins
  */
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string; filter?: string }>;
+}) {
   const session = await auth();
+  const params = await searchParams;
 
   if (!session?.user?.email) {
     redirect('/login');
@@ -25,16 +32,36 @@ export default async function AdminDashboardPage() {
     redirect('/dashboard');
   }
 
+  // Filtros y búsqueda
+  const search = params.search || '';
+  const filter = params.filter || 'all';
+
+  // Construir where para advisors
+  const advisorWhere: any = { accountType: 'advisor' };
+  
+  if (search) {
+    advisorWhere.OR = [
+      { users: { some: { email: { contains: search, mode: 'insensitive' } } } },
+      { users: { some: { name: { contains: search, mode: 'insensitive' } } } },
+      { advisorProfile: { companyName: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  if (filter === 'verified') {
+    advisorWhere.advisorProfile = { isVerified: true };
+  } else if (filter === 'pending') {
+    advisorWhere.advisorProfile = { isVerified: false };
+  }
+
   // Obtener estadísticas
   const [advisors, pendingRequests, totalAccounts] = await Promise.all([
     prisma.account.findMany({
-      where: { accountType: 'advisor' },
+      where: advisorWhere,
       include: {
         users: { select: { email: true, name: true } },
         advisorProfile: true,
       },
       orderBy: { createdAt: 'desc' },
-      take: 10,
     }),
     prisma.accessRequest.findMany({
       where: { status: 'pending' },
@@ -136,11 +163,14 @@ export default async function AdminDashboardPage() {
           </div>
         )}
 
+        {/* Buscador */}
+        <AdvisorSearchBar />
+
         {/* Lista de Advisors */}
         <div className="bg-white rounded-lg shadow">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
             <h2 className="text-lg font-semibold text-gray-900">
-              Gestores Registrados
+              Gestores Registrados ({advisors.length})
             </h2>
             <Link
               href="/admin/advisors/new"
@@ -187,7 +217,7 @@ export default async function AdminDashboardPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex flex-wrap gap-2">
                         <Link
                           href={`/admin/advisors/${advisor.id}/edit`}
                           className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
@@ -199,6 +229,11 @@ export default async function AdminDashboardPage() {
                         ) : (
                           <RevokeVerificationButton advisorId={advisor.id} />
                         )}
+                        <ChangePasswordButton advisorId={advisor.id} />
+                        <DeleteAdvisorButton 
+                          advisorId={advisor.id} 
+                          advisorName={user?.name || user?.email || 'Gestor'} 
+                        />
                       </div>
                     </div>
                   </div>

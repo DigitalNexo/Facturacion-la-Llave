@@ -7,13 +7,24 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useToast } from '@/components/ToastProvider';
+import { useConfirm } from '@/hooks/useConfirm';
 
 export function ApproveRequestButton({ requestId }: { requestId: string }) {
   const router = useRouter();
+  const toast = useToast();
+  const { confirm, ConfirmModal } = useConfirm();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleApprove = async () => {
-    if (!confirm('¿Aprobar esta solicitud de acceso?')) return;
+    const confirmed = await confirm({
+      title: '¿Aprobar solicitud?',
+      message: 'El gestor tendrá acceso completo a la cuenta de la empresa.',
+      type: 'info',
+      confirmText: 'Aprobar',
+    });
+
+    if (!confirmed) return;
 
     setIsLoading(true);
     try {
@@ -26,32 +37,47 @@ export function ApproveRequestButton({ requestId }: { requestId: string }) {
         throw new Error(data.error || 'Error al aprobar');
       }
 
+      toast.success('Solicitud aprobada', 'El gestor ya tiene acceso a la empresa');
       router.refresh();
     } catch (error: any) {
-      alert(error.message || 'Error al aprobar solicitud');
+      toast.error('Error al aprobar', error.message || 'No se pudo aprobar la solicitud');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <button
-      onClick={handleApprove}
-      disabled={isLoading}
-      className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
-    >
-      {isLoading ? 'Aprobando...' : 'Aprobar'}
-    </button>
+    <>
+      <button
+        onClick={handleApprove}
+        disabled={isLoading}
+        className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+      >
+        {isLoading ? 'Aprobando...' : 'Aprobar'}
+      </button>
+      <ConfirmModal />
+    </>
   );
 }
 
 export function RejectRequestButton({ requestId }: { requestId: string }) {
   const router = useRouter();
+  const toast = useToast();
+  const { confirm, ConfirmModal } = useConfirm();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleReject = async () => {
+    const confirmed = await confirm({
+      title: '¿Rechazar solicitud?',
+      message: 'El gestor será notificado del rechazo. Esta acción no se puede deshacer.',
+      type: 'danger',
+      confirmText: 'Rechazar',
+    });
+
+    if (!confirmed) return;
+
+    // Pedir motivo opcional
     const reason = prompt('Motivo de rechazo (opcional):');
-    if (reason === null) return; // Usuario canceló
 
     setIsLoading(true);
     try {
@@ -66,21 +92,25 @@ export function RejectRequestButton({ requestId }: { requestId: string }) {
         throw new Error(data.error || 'Error al rechazar');
       }
 
+      toast.warning('Solicitud rechazada', reason || 'La solicitud ha sido rechazada');
       router.refresh();
     } catch (error: any) {
-      alert(error.message || 'Error al rechazar solicitud');
+      toast.error('Error al rechazar', error.message || 'No se pudo rechazar la solicitud');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <button
-      onClick={handleReject}
-      disabled={isLoading}
-      className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
-    >
-      {isLoading ? 'Rechazando...' : 'Rechazar'}
-    </button>
+    <>
+      <button
+        onClick={handleReject}
+        disabled={isLoading}
+        className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
+      >
+        {isLoading ? 'Rechazando...' : 'Rechazar'}
+      </button>
+      <ConfirmModal />
+    </>
   );
 }

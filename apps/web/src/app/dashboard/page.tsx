@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { PrismaClient } from '@fll/db';
 import { SignOutButton } from '@/components/SignOutButton';
+import SidebarNav from '@/components/SidebarNav';
 
 const prisma = new PrismaClient();
 
@@ -36,27 +37,33 @@ export default async function DashboardPage() {
     daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
   }
 
+  // Determinar si es superadmin
+  const isSuperAdmin = session.user.email === process.env.SUPERADMIN_EMAILS?.split(',')[0];
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">
-                Facturación La Llave
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {session.user.email}
-              </span>
-              <SignOutButton />
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar de navegación */}
+      <SidebarNav 
+        accountType={account?.accountType || 'company'} 
+        isSuperAdmin={isSuperAdmin}
+        userEmail={session.user.email}
+      />
+
+      {/* Contenido principal */}
+      <div className="flex-1 lg:ml-64 transition-all duration-300">
+        <nav className="bg-white shadow">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center lg:ml-0 ml-12">
+                <h1 className="text-xl font-bold text-gray-900">
+                  Dashboard
+                </h1>
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Banner de trial */}
         {account?.status === 'trialing' && daysLeft !== null && (
           <div className={`mb-6 p-4 rounded-lg ${
@@ -132,6 +139,28 @@ export default async function DashboardPage() {
                 Acciones rápidas
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Empresas/Autónomos: Gestionar gestores */}
+                {(account?.accountType === 'company' || account?.accountType === 'self_employed') && (
+                  <Link
+                    href="/dashboard/gestores"
+                    className="p-4 border-2 border-indigo-300 bg-indigo-50 rounded-lg hover:border-indigo-500 hover:shadow-lg transition"
+                  >
+                    <h4 className="font-medium text-indigo-900">👥 Mis Gestores</h4>
+                    <p className="text-sm text-indigo-700 mt-1">Código y permisos</p>
+                  </Link>
+                )}
+
+                {/* Gestores: Solicitar acceso */}
+                {account?.accountType === 'advisor' && (
+                  <Link
+                    href="/advisor/request-access"
+                    className="p-4 border-2 border-green-300 bg-green-50 rounded-lg hover:border-green-500 hover:shadow-lg transition"
+                  >
+                    <h4 className="font-medium text-green-900">🔑 Solicitar Acceso</h4>
+                    <p className="text-sm text-green-700 mt-1">Introducir código</p>
+                  </Link>
+                )}
+
                 <Link
                   href="/dashboard/tenants"
                   className="p-4 border border-gray-300 rounded-lg hover:border-blue-500 hover:shadow transition"
@@ -168,6 +197,7 @@ export default async function DashboardPage() {
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }

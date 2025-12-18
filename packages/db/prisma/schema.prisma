@@ -37,6 +37,9 @@ model Account {
   status               AccountStatus  @default(trialing)
   isBillingEnabled     Boolean        @default(true) @map("is_billing_enabled")
   
+  // Código de invitación (para que gestores soliciten acceso)
+  invitationCode       String?        @unique @map("invitation_code")
+  
   // Trial
   trialEndsAt          DateTime?      @map("trial_ends_at")
   
@@ -78,6 +81,8 @@ model User {
   tenantAccesses     TenantAccess[]
   auditEvents        AuditEvent[]
   accessRequests     AccessRequest[]
+  sentInvitations    Invitation[]
+  passwordResetTokens PasswordResetToken[]
   
   // Auditoría
   lastLoginAt        DateTime? @map("last_login_at")
@@ -289,6 +294,37 @@ model AccessRequest {
   @@index([requesterId])
   @@index([tenantId])
   @@map("access_requests")
+}
+
+model Invitation {
+  id                    String    @id @default(uuid())
+  
+  // Token único
+  token                 String    @unique
+  email                 String
+  
+  // Estado
+  status                String    @default("pending")  // pending | accepted | expired
+  
+  // Metadatos (businessName, message)
+  metadata              Json?
+  
+  // Expiración
+  expiresAt             DateTime  @map("expires_at")
+  acceptedAt            DateTime? @map("accepted_at")
+  
+  // Relación con el gestor que invita
+  invitedBy             String    @map("invited_by")
+  inviter               User      @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+  
+  // Auditoría
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([invitedBy])
+  @@index([token])
+  @@index([email])
+  @@map("invitations")
 }
 
 // ========================================
@@ -624,4 +660,22 @@ model UsageCounter {
   @@index([accountId])
   @@index([period])
   @@map("usage_counters")
+}
+
+// ========================================
+// PASSWORD RESET TOKENS
+// ========================================
+
+model PasswordResetToken {
+  id          String    @id @default(uuid())
+  token       String    @unique
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([token])
+  @@map("password_reset_tokens")
 }

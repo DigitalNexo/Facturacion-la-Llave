@@ -684,4 +684,135 @@ Lo que NO existe (y por tanto el plan no puede prometer) es un trámite estánda
 
 ---
 
+## FASE 5.5 — Mejoras de UX/UI y Consolidación (Tier 2 y Tier 3)
+
+> **Nota:** Esta fase incluye funcionalidades identificadas como faltantes en el plan original, categorizadas por prioridad y orientadas a mejorar experiencia de usuario, robustez operativa y facilidades administrativas. Se ejecutarán después de completar las fases 1-5 y antes del gate final de producción (fase 6).
+
+### 5.5.1 — Tier 2: Funcionalidades importantes para UX profesional
+
+**Objetivo:** Mejorar la experiencia de usuario y robustez operativa del sistema.
+
+**Notificaciones in-app**
+* [ ] Sistema de notificaciones persistentes (no solo toasts)
+* [ ] Badge con contador de notificaciones no leídas
+* [ ] Panel deslizable con historial de notificaciones
+* [ ] Marcar como leída/todas leídas
+* [ ] Tipos: info, warning, error, success
+* [ ] Ejemplos: solicitud de gestor pendiente, factura emitida, error en exportación
+
+**Búsqueda y filtros avanzados**
+* [ ] Buscador global en listados (facturas, clientes, productos/servicios)
+* [ ] Filtros por fecha (rango), estado, cliente, serie
+* [ ] Paginación eficiente con infinite scroll o paginado tradicional
+* [ ] Ordenación por columnas (fecha, importe, número)
+* [ ] Guardar filtros preferidos por usuario
+
+**Dashboard con métricas**
+* [ ] Gráficos de facturación mensual/trimestral
+* [ ] Indicadores clave: total facturado, número facturas, clientes activos
+* [ ] Comparativa períodos (mes actual vs anterior)
+* [ ] Top clientes por facturación
+* [ ] Estado de cobros (si se implementa módulo de cobros en futuro)
+
+**Validaciones españolas específicas**
+* [ ] Validación de NIF/CIF/NIE con algoritmo oficial
+* [ ] Validación de IBAN español
+* [ ] Validación de códigos postales españoles
+* [ ] Formateo automático de campos (teléfono, NIF, etc.)
+* [ ] Mensajes de error específicos y útiles
+
+**Estados de carga (loading states)**
+* [ ] Skeletons en listados durante carga inicial
+* [ ] Spinners en acciones (guardar, emitir, exportar)
+* [ ] Feedback visual en todas las acciones asíncronas
+* [ ] Prevención de doble submit en formularios
+* [ ] Timeout y manejo de errores de red con reintentos
+
+Entregables:
+* Sistema de notificaciones funcional con panel UI
+* Búsqueda y filtros implementados en facturas y clientes
+* Dashboard con al menos 4 métricas visuales
+* Todas las validaciones españolas integradas en formularios
+* Loading states coherentes en toda la aplicación
+
+Tests requeridos:
+* Tests de validación de NIF/CIF/NIE con casos válidos e inválidos
+* Tests de filtros y búsqueda con datasets de prueba
+* Tests de notificaciones (creación, lectura, borrado)
+
+---
+
+### 5.5.2 — Tier 3: Funcionalidades deseables a medio plazo
+
+**Objetivo:** Completar la experiencia profesional con funcionalidades de alto valor pero no críticas para MVP.
+
+**Emails transaccionales**
+* [ ] Configuración SMTP/servicio de email (SendGrid, AWS SES, etc.)
+* [ ] Templates de emails en HTML
+* [ ] Email de bienvenida post-registro
+* [ ] Email con link de descarga de factura al cliente
+* [ ] Email de notificación de nueva factura emitida
+* [ ] Email de invitación para gestores
+* [ ] Email de solicitud de acceso de gestor (notificación a empresa)
+* [ ] Logs de emails enviados
+
+**Exportación de datos**
+* [ ] Exportar facturas a Excel/CSV con filtros aplicados
+* [ ] Exportar listado de clientes
+* [ ] Exportar registros de auditoría (para inspecciones)
+* [ ] Generar ZIP con todas las facturas PDF de un período
+* [ ] Exportar datos contables (formato estándar o CSV)
+
+**Gestión de perfil y preferencias**
+* [ ] Editar datos de usuario (nombre, email, teléfono)
+* [ ] Subir foto de perfil/avatar
+* [ ] Preferencias de notificaciones (email sí/no por tipo)
+* [ ] Preferencias de idioma (preparación)
+* [ ] Zona horaria del usuario
+
+**Dark mode**
+* [ ] Toggle entre modo claro y oscuro
+* [ ] Persistir preferencia en localStorage o BD
+* [ ] Todos los componentes adaptados a ambos modos
+* [ ] Transición suave entre modos
+
+**Multi-idioma (i18n)**
+* [ ] Configuración de react-i18next o similar
+* [ ] Español como idioma por defecto
+* [ ] Preparar inglés como segundo idioma
+* [ ] Selector de idioma en UI
+* [ ] Todas las cadenas de texto en archivos de traducción
+* [ ] Fechas y números formateados según locale
+
+Entregables:
+* Sistema de emails configurado y enviando correctamente
+* Al menos 3 tipos de exportaciones funcionales
+* Perfil de usuario editable con avatar
+* Dark mode completamente funcional
+* Estructura i18n preparada con español e inglés
+
+Tests requeridos:
+* Tests de envío de emails (mocks o entorno de test)
+* Tests de exportación CSV/Excel con validación de contenido
+* Tests de cambio de idioma y formateo de fechas
+
+---
+
+### 5.5.3 — Integración de Tier 2 y Tier 3 en el flujo de desarrollo
+
+**Estrategia de implementación:**
+
+1. **Post FASE 5 (Invitaciones):** Comenzar con Tier 2 antes de proceder a FASE 6 (Gate de producción)
+2. **Priorización:** Tier 2 es requisito para "OK para vender" si se busca UX profesional; Tier 3 puede posponerse a post-lanzamiento
+3. **Paralelización:** Algunos items de Tier 2 pueden desarrollarse en paralelo (notificaciones, búsquedas, validaciones)
+4. **Tests obligatorios:** Mismo rigor que fases anteriores - nada va a producción sin tests
+
+**Dependencias:**
+* Notificaciones in-app requiere ToastProvider ya implementado (ampliar)
+* Emails transaccionales requiere configuración de cuenta SMTP/servicio
+* Dark mode requiere actualización de todos los componentes UI
+* Multi-idioma requiere refactorización de strings hardcodeadas
+
+---
+
 ## FIN DEL PLAN DE TRABAJO

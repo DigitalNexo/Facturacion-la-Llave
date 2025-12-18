@@ -102,6 +102,17 @@ export async function POST(request: Request) {
 
     // Crear cuenta, usuario, suscripción y tenant en una transacción
     const result = await prisma.$transaction(async (tx) => {
+      // Generar código de invitación único
+      const { generateInvitationCode } = await import('@fll/core');
+      let invitationCode = generateInvitationCode();
+      
+      // Asegurar que es único
+      let codeExists = await tx.account.findUnique({ where: { invitationCode } });
+      while (codeExists) {
+        invitationCode = generateInvitationCode();
+        codeExists = await tx.account.findUnique({ where: { invitationCode } });
+      }
+      
       // 1. Crear Account
       const account = await tx.account.create({
         data: {
@@ -109,6 +120,7 @@ export async function POST(request: Request) {
           status: 'trialing',
           trialEndsAt,
           isBillingEnabled: true, // autónomo y empresa SÍ pagan
+          invitationCode, // Código para que gestores soliciten acceso
         },
       });
 
