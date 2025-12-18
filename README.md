@@ -78,7 +78,7 @@ facturacion-la-llave/
 
 - Node.js 18+ 
 - Docker y Docker Compose
-- Cuenta de Stripe (modo test)
+- Cuenta de Stripe (modo test) - Solo para FASE 6+
 
 ### Instalación
 
@@ -90,9 +90,16 @@ cd Facturacion-la-Llave
 # Instalar dependencias
 npm install
 
+# Instalar dependencias de FASE 3 (autenticación)
+chmod +x install-fase3.sh
+./install-fase3.sh
+
 # Configurar variables de entorno
 cp .env.example .env
 # Editar .env con tus credenciales
+
+# Generar NEXTAUTH_SECRET (si no lo hizo el script)
+echo "NEXTAUTH_SECRET=\"$(openssl rand -base64 32)\"" >> .env
 
 # Levantar PostgreSQL
 docker-compose up -d

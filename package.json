@@ -19,10 +19,14 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:auth": "jest auth.test.ts",
     "db:migrate": "npm run migrate --workspace=packages/db",
     "db:seed": "npm run seed --workspace=packages/db",
     "db:studio": "npm run studio --workspace=packages/db",
     "db:generate": "npm run generate --workspace=packages/db",
+    "db:status": "npm run status --workspace=packages/db",
+    "validate": "chmod +x validate-fase3.sh && ./validate-fase3.sh",
+    "setup:fase3": "chmod +x install-fase3.sh && ./install-fase3.sh",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/.next"
   },
   "devDependencies": {
@@ -39,6 +43,11 @@
   },
   "dependencies": {
     "@prisma/client": "^6.2.0",
-    "@prisma/engines": "^6.2.0"
+    "@prisma/engines": "^6.2.0",
+    "bcryptjs": "^2.4.3",
+    "next-auth": "^5.0.0-beta.30"
+  },
+  "optionalDependencies": {
+    "@types/bcryptjs": "^2.4.6"
   }
 }
