@@ -5,6 +5,16 @@
 
 import type { AccountType } from './types';
 
+/**
+ * Verifica si un email es superadmin
+ * Los superadmins están definidos en la variable de entorno SUPERADMIN_EMAILS
+ */
+export function isSuperAdmin(email: string): boolean {
+  const superadminEmails = process.env.SUPERADMIN_EMAILS || '';
+  const allowedEmails = superadminEmails.split(',').map(e => e.trim().toLowerCase());
+  return allowedEmails.includes(email.toLowerCase());
+}
+
 export interface PlanLimits {
   maxTenants: number | null; // null = ilimitado
   maxUsers: number | null;

@@ -4,14 +4,22 @@
  */
 
 import { auth } from './auth';
+import { isSuperAdmin } from '@fll/core';
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
+  const userEmail = req.auth?.user?.email || '';
 
   // Rutas públicas
   const publicRoutes = ['/', '/login', '/register', '/api/auth'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+
+  // Rutas de admin (solo superadmin)
+  const isAdminRoute = pathname.startsWith('/admin');
+  if (isAdminRoute && (!isLoggedIn || !isSuperAdmin(userEmail))) {
+    return Response.redirect(new URL('/dashboard', req.url));
+  }
 
   // Si no está logueado y trata de acceder a ruta protegida
   if (!isLoggedIn && !isPublicRoute) {
