@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(body.password, 12);
 
     // Crear advisor en transacción
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Crear Account tipo advisor
       const account = await tx.account.create({
         data: {

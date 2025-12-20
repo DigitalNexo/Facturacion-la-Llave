@@ -92,7 +92,7 @@ export default async function AdvisorTenantCustomersPage({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {customers.map((customer) => (
+            {customers.map((customer: any) => (
               <div
                 key={customer.id}
                 className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow"

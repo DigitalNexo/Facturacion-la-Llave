@@ -58,7 +58,7 @@ export default async function AdvisorTenantLayout({
     },
   });
 
-  const companies = allTenantAccesses.map(ta => ({
+  const companies = allTenantAccesses.map((ta: any) => ({
     id: ta.tenant.id,
     name: ta.tenant.businessName,
   }));

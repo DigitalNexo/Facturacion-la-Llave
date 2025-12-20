@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../../../../auth';
 import { PrismaClient } from '@fll/db';
-import { auditLog, AuditEventTypes } from '@fll/core/audit';
+import { auditLog, AuditEventTypes, createInvoiceRecord, createSubmission } from '@fll/core';
 
 const db = new PrismaClient();
 
@@ -81,7 +81,7 @@ export async function POST(
 
     // ⚠️ PROCESO CRÍTICO: Reservar número correlativo de forma atómica
     // Usamos una transacción para garantizar unicidad y atomicidad
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: any) => {
       // 1. Obtener la serie con lock (FOR UPDATE)
       const series = await tx.invoiceSeries.findUnique({
         where: { id: invoice.seriesId },
@@ -164,6 +164,44 @@ export async function POST(
           userAgent: req.headers.get('user-agent') || undefined,
         },
       });
+
+      // 7. REGISTRO LEGAL: Crear InvoiceRecord con hash encadenado (OBLIGATORIO)
+      const recordResult = await createInvoiceRecord(
+        tx,
+        invoiceId,
+        invoice.tenantId,
+        {
+          number: issuedInvoice.number!,
+          issuedAt: issuedInvoice.issueDate!,
+          type: issuedInvoice.type,
+          subtotal: typeof issuedInvoice.subtotal === 'object' ? issuedInvoice.subtotal.toNumber() : Number(issuedInvoice.subtotal),
+          taxAmount: typeof issuedInvoice.taxAmount === 'object' ? issuedInvoice.taxAmount.toNumber() : Number(issuedInvoice.taxAmount),
+          total: typeof issuedInvoice.total === 'object' ? issuedInvoice.total.toNumber() : Number(issuedInvoice.total),
+          tenant: {
+            taxId: issuedInvoice.tenant.taxId,
+            businessName: issuedInvoice.tenant.businessName,
+          },
+          series: {
+            code: issuedInvoice.series.code,
+          },
+          customer: {
+            taxId: issuedInvoice.customer?.taxId || 'N/A',
+            name: issuedInvoice.customer?.name || 'Cliente genérico',
+          },
+          lines: issuedInvoice.lines.map((line: any) => ({
+            description: line.description,
+          })),
+        },
+        'creation',
+        user.id
+      );
+
+      // 8. VERI*FACTU: Crear submission si tenant tiene verifactuMode='enabled' (FASE 8)
+      await createSubmission(
+        tx,
+        recordResult.id,
+        issuedInvoice.tenant.verifactuMode
+      );
 
       return issuedInvoice;
     });

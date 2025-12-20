@@ -272,7 +272,7 @@ async function testIssueInvoice() {
   
   try {
     // Transacción atómica
-    const result = await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx: any) => {
       // 1. Incrementar serie
       const series = await tx.invoiceSeries.update({
         where: { id: seriesId },
@@ -425,7 +425,7 @@ async function showAuditHistory() {
     },
   });
   
-  console.table(history.map(h => ({
+  console.table(history.map((h: any) => ({
     Tipo: h.eventType,
     Acción: h.action,
     Timestamp: h.createdAt.toISOString(),

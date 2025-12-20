@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(body.password, 12);
 
     // Crear en transacción
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Crear Account (tipo company, SIN trial - activación inmediata)
       const account = await tx.account.create({
         data: {

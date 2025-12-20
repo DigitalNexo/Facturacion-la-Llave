@@ -96,7 +96,7 @@ export default async function TenantsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {account.tenants.map((tenant) => (
+          {account.tenants.map((tenant: any) => (
             <div
               key={tenant.id}
               className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow"

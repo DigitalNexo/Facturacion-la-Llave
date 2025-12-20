@@ -46,6 +46,8 @@ model Account {
   // Stripe
   stripeCustomerId     String?        @unique @map("stripe_customer_id")
   stripeSubscriptionId String?        @unique @map("stripe_subscription_id")
+  stripePriceId        String?        @map("stripe_price_id") // Price ID del plan actual
+  currentPlan          String?        @map("current_plan") // AUTONOMO, EMPRESA_BASIC, EMPRESA_PRO, ASESORIA
   
   // Bloqueo
   blockedReason        String?        @map("blocked_reason")

@@ -67,7 +67,7 @@ export async function PUT(
     }
 
     // Actualizar en transacción
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx: any) => {
       // Actualizar User
       if (name !== undefined || email !== undefined) {
         await tx.user.update({

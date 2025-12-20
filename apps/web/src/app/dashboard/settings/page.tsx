@@ -5,12 +5,23 @@
 
 'use client';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, SessionProvider } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ToastProvider';
 
 export default function SettingsPage() {
+  return (
+    <SessionProvider>
+      <SettingsContent />
+    </SessionProvider>
+  );
+}
+
+function SettingsContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const toast = useToast();

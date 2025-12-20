@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../../../../auth';
 import { PrismaClient } from '@fll/db';
 import jsPDF from 'jspdf';
-import { auditLog, AuditEventTypes } from '@fll/core/audit';
+import { auditLog, AuditEventTypes } from '@fll/core';
 
 const db = new PrismaClient();
 
@@ -148,7 +148,7 @@ export async function GET(
     yPos += 5;
 
     // Líneas
-    invoice.lines.forEach((line) => {
+    invoice.lines.forEach((line: any) => {
       const lineTotal = Number(line.total);
       doc.text(line.description.substring(0, 40), 20, yPos);
       doc.text(String(line.quantity), 120, yPos);

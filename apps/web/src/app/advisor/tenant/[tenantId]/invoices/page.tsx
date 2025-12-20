@@ -118,7 +118,7 @@ export default async function AdvisorTenantInvoicesPage({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {invoices.map((invoice) => (
+                {invoices.map((invoice: any) => (
                   <tr key={invoice.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {invoice.series?.prefix || ''}{invoice.number}

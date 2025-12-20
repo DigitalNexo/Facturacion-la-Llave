@@ -14,7 +14,21 @@
  * 7. Generación de PDF
  */
 
-import { PrismaClient, InvoiceStatus, InvoiceType } from '@fll/db';
+import { PrismaClient } from '@fll/db';
+
+// Los enums están disponibles directamente en el cliente generado
+const InvoiceStatus = {
+  draft: 'draft' as const,
+  issued: 'issued' as const,
+  rectified: 'rectified' as const,
+  voided: 'voided' as const,
+};
+
+const InvoiceType = {
+  regular: 'regular' as const,
+  simplified: 'simplified' as const,
+  rectifying: 'rectifying' as const,
+};
 
 const prisma = new PrismaClient();
 
@@ -198,7 +212,7 @@ describe('Series de Facturación', () => {
       });
 
       expect(series.length).toBeGreaterThan(0);
-      expect(series.every((s) => s.tenantId === testTenantId)).toBe(true);
+      expect(series.every((s: any) => s.tenantId === testTenantId)).toBe(true);
     });
 
     it('debe filtrar por estado activo', async () => {
@@ -206,7 +220,7 @@ describe('Series de Facturación', () => {
         where: { tenantId: testTenantId, isActive: true },
       });
 
-      expect(activeSeries.every((s) => s.isActive)).toBe(true);
+      expect(activeSeries.every((s: any) => s.isActive)).toBe(true);
     });
   });
 
@@ -453,7 +467,7 @@ describe('Emisión de Facturas', () => {
       const expectedNumber = (seriesBefore?.currentNumber || 0) + 1;
 
       // Emitir (simular proceso de emisión)
-      const issued = await prisma.$transaction(async (tx) => {
+      const issued = await prisma.$transaction(async (tx: any) => {
         // Incrementar contador de serie
         const updatedSeries = await tx.invoiceSeries.update({
           where: { id: testSeriesId },
@@ -514,7 +528,7 @@ describe('Emisión de Facturas', () => {
         });
 
         // Emitir
-        const issued = await prisma.$transaction(async (tx) => {
+        const issued = await prisma.$transaction(async (tx: any) => {
           const series = await tx.invoiceSeries.update({
             where: { id: testSeriesId },
             data: { currentNumber: { increment: 1 } },
@@ -619,7 +633,7 @@ describe('Inmutabilidad de Facturas Emitidas', () => {
     });
 
     // Emitir
-    const issued = await prisma.$transaction(async (tx) => {
+    const issued = await prisma.$transaction(async (tx: any) => {
       const series = await tx.invoiceSeries.update({
         where: { id: testSeriesId },
         data: { currentNumber: { increment: 1 } },
@@ -1034,7 +1048,7 @@ describe('Consultas de Facturas', () => {
     });
 
     expect(invoices.length).toBeGreaterThan(0);
-    expect(invoices.every((i) => i.tenantId === testTenantId)).toBe(true);
+    expect(invoices.every((i: any) => i.tenantId === testTenantId)).toBe(true);
   });
 
   it('debe filtrar por estado', async () => {
@@ -1042,7 +1056,7 @@ describe('Consultas de Facturas', () => {
       where: { tenantId: testTenantId, status: InvoiceStatus.draft },
     });
 
-    expect(drafts.every((i) => i.status === InvoiceStatus.draft)).toBe(true);
+    expect(drafts.every((i: any) => i.status === InvoiceStatus.draft)).toBe(true);
   });
 
   it('debe filtrar por serie', async () => {
@@ -1050,7 +1064,7 @@ describe('Consultas de Facturas', () => {
       where: { tenantId: testTenantId, seriesId: testSeriesId },
     });
 
-    expect(invoices.every((i) => i.seriesId === testSeriesId)).toBe(true);
+    expect(invoices.every((i: any) => i.seriesId === testSeriesId)).toBe(true);
   });
 
   it('debe incluir líneas en consulta', async () => {
@@ -1060,7 +1074,7 @@ describe('Consultas de Facturas', () => {
       take: 5,
     });
 
-    invoices.forEach((invoice) => {
+    invoices.forEach((invoice: any) => {
       expect(invoice.lines).toBeDefined();
       expect(Array.isArray(invoice.lines)).toBe(true);
     });
@@ -1073,7 +1087,7 @@ describe('Consultas de Facturas', () => {
       take: 5,
     });
 
-    invoices.forEach((invoice) => {
+    invoices.forEach((invoice: any) => {
       if (invoice.customerId) {
         expect(invoice.customer).toBeDefined();
       }

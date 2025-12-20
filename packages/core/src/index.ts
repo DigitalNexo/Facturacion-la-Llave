@@ -14,3 +14,6 @@ export * from './types';
 export * from './validations';
 export * from './invitation-code';
 export * from './audit';
+export * from './invoice-record';
+export * from './verifactu-submission';
+export * from './stripe';

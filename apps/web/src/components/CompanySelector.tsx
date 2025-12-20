@@ -64,7 +64,7 @@ export default function CompanySelector({ companies, currentTenantId }: CompanyS
               <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
                 Cambiar a:
               </div>
-              {companies.map((company) => (
+              {companies.map((company: any) => (
                 <button
                   key={company.id}
                   onClick={() => handleSelectCompany(company.id)}

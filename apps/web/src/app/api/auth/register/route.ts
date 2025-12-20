@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL.DAYS);
 
     // Crear cuenta, usuario, suscripción y tenant en una transacción
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // Generar código de invitación único
       const { generateInvitationCode } = await import('@fll/core');
       let invitationCode = generateInvitationCode();

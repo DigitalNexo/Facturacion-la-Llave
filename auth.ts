@@ -87,6 +87,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           accountId: account.id,
           accountType: account.accountType,
           accountStatus: account.status,
+          isSuperAdmin: user.isSuperAdmin,
         };
       },
     }),

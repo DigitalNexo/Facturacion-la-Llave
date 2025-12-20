@@ -46,6 +46,7 @@
     "@prisma/engines": "^6.2.0",
     "bcryptjs": "^2.4.3",
     "next-auth": "^5.0.0-beta.30",
+    "stripe": "^17.4.0",
     "zod": "^3.23.8"
   },
   "optionalDependencies": {

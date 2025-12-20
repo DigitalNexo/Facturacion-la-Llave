@@ -138,7 +138,7 @@ export default async function AdminDashboardPage({
               </h2>
             </div>
             <div className="divide-y divide-gray-200">
-              {pendingRequests.map((request) => (
+              {pendingRequests.map((request: any) => (
                 <div key={request.id} className="px-6 py-4">
                   <div className="flex justify-between items-start">
                     <div>
@@ -185,7 +185,7 @@ export default async function AdminDashboardPage({
                 No hay gestores registrados
               </div>
             ) : (
-              advisors.map((advisor) => {
+              advisors.map((advisor: any) => {
                 const user = advisor.users[0];
                 const profile = advisor.advisorProfile;
                 

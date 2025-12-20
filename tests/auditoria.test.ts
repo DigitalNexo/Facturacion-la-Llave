@@ -3,7 +3,7 @@
  * Verifica que todas las operaciones sobre facturas quedan registradas
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+// Jest globals are available globally in test environment
 import { PrismaClient } from '@fll/db';
 
 const db = new PrismaClient();
@@ -287,7 +287,7 @@ describe('Sistema de Auditoría de Facturas', () => {
       expect(auditHistory[3].eventType).toBe('invoice.create');
 
       // Verificar que todos tienen usuario
-      auditHistory.forEach(event => {
+      auditHistory.forEach((event: any) => {
         expect(event.user).toBeDefined();
         expect(event.user.email).toBe('audit-test@example.com');
       });
@@ -306,7 +306,7 @@ describe('Sistema de Auditoría de Facturas', () => {
       });
 
       expect(userActions.length).toBeGreaterThanOrEqual(4);
-      userActions.forEach(action => {
+      userActions.forEach((action: any) => {
         expect(action.userId).toBe(testUserId);
       });
     });
@@ -321,7 +321,7 @@ describe('Sistema de Auditoría de Facturas', () => {
       });
 
       expect(issueEvents.length).toBeGreaterThanOrEqual(1);
-      issueEvents.forEach(event => {
+      issueEvents.forEach((event: any) => {
         expect(event.eventType).toBe('invoice.issue');
       });
     });

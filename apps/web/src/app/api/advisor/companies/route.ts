@@ -57,7 +57,7 @@ export async function GET() {
     });
 
     // Formatear respuesta
-    const companies = tenantAccesses.map((access) => ({
+    const companies = tenantAccesses.map((access: any) => ({
       id: access.tenant.id,
       name: access.tenant.businessName,
       taxId: access.tenant.taxId,

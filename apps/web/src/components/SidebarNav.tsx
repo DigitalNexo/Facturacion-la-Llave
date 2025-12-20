@@ -18,22 +18,24 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  // Superadmin
+  // Superadmin - tiene acceso a TODO
   { name: 'Panel Admin', href: '/admin/dashboard', icon: '👑', allowedTypes: ['superadmin'] },
+  { name: 'Crear Gestor', href: '/admin/create-advisor', icon: '➕', allowedTypes: ['superadmin'] },
+  { name: 'Dashboard', href: '/dashboard', icon: '🏠', allowedTypes: ['superadmin', 'company', 'self_employed'] },
+  { name: 'Empresas', href: '/dashboard/tenants', icon: '🏢', allowedTypes: ['superadmin', 'company', 'self_employed'] },
+  { name: 'Facturas', href: '/dashboard/invoices', icon: '📄', allowedTypes: ['superadmin', 'company', 'self_employed'] },
+  { name: 'Clientes', href: '/dashboard/customers', icon: '👤', allowedTypes: ['superadmin', 'company', 'self_employed'] },
+  { name: 'Series', href: '/dashboard/series', icon: '🔢', allowedTypes: ['superadmin', 'company', 'self_employed'] },
+  { name: 'Gestores', href: '/dashboard/gestores', icon: '👥', allowedTypes: ['superadmin', 'company', 'self_employed'] },
+  { name: 'Suscripción', href: '/dashboard/subscription', icon: '💳', allowedTypes: ['superadmin', 'company', 'self_employed'] },
   
   // Gestor - Solo ve sus empresas asignadas
+  { name: 'Dashboard Gestor', href: '/advisor/dashboard', icon: '🏠', allowedTypes: ['advisor'] },
   { name: 'Mis Empresas', href: '/advisor/companies', icon: '🏢', allowedTypes: ['advisor'] },
   { name: 'Solicitar Acceso', href: '/advisor/request-access', icon: '🔑', allowedTypes: ['advisor'] },
   
-  // Empresa/Autónomo
-  { name: 'Dashboard', href: '/dashboard', icon: '🏠', allowedTypes: ['company', 'self_employed'] },
-  { name: 'Mis Gestores', href: '/dashboard/gestores', icon: '👥', allowedTypes: ['company', 'self_employed'] },
-  { name: 'Empresas', href: '/dashboard/tenants', icon: '🏢', allowedTypes: ['company', 'self_employed'] },
-  { name: 'Facturas', href: '/dashboard/invoices', icon: '📄', allowedTypes: ['company', 'self_employed'] },
-  { name: 'Clientes', href: '/dashboard/customers', icon: '👤', allowedTypes: ['company', 'self_employed'] },
-  
   // Todos
-  { name: 'Configuración', href: '/dashboard/settings', icon: '⚙️', allowedTypes: ['advisor', 'company', 'self_employed'] },
+  { name: 'Configuración', href: '/dashboard/settings', icon: '⚙️', allowedTypes: ['superadmin', 'advisor', 'company', 'self_employed'] },
 ];
 
 interface SidebarNavProps {
@@ -99,7 +101,7 @@ export default function SidebarNav({ accountType, isSuperAdmin, userEmail }: Sid
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {filteredItems.map((item) => {
+            {filteredItems.map((item: any) => {
               const isActive = pathname === item.href;
               return (
                 <Link

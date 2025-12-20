@@ -144,7 +144,7 @@ export default async function AdvisorsManagementPage() {
               Solicitudes Pendientes ({pendingRequests.length})
             </h2>
             <div className="space-y-4">
-              {pendingRequests.map((request) => (
+              {pendingRequests.map((request: any) => (
                 <div
                   key={request.id}
                   className="bg-white rounded-lg p-4 flex items-center justify-between"
@@ -231,7 +231,7 @@ export default async function AdvisorsManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {advisorAccesses.map((access) => (
+                  {advisorAccesses.map((access: any) => (
                     <tr key={access.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">

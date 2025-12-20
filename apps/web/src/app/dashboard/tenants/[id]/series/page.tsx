@@ -292,7 +292,7 @@ export default function SeriesPage() {
                 </td>
               </tr>
             ) : (
-              series.map((s) => (
+              series.map((s: any) => (
                 <tr key={s.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <span className="font-medium">{s.code}</span>

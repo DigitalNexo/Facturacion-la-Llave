@@ -62,7 +62,7 @@ export async function POST(
     }
 
     // Aprobar solicitud en transacción
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // 1. Crear TenantAccess
       const tenantAccess = await tx.tenantAccess.create({
         data: {

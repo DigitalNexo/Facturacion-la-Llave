@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../../../../auth';
 import { PrismaClient } from '@fll/db';
 import { z } from 'zod';
-import { auditLog, AuditEventTypes } from '@fll/core/audit';
+import { auditLog, AuditEventTypes } from '@fll/core';
 
 const db = new PrismaClient();
 

@@ -228,7 +228,7 @@ export default function EditInvoicePage() {
                 className="w-full px-3 py-2 border rounded"
                 required
               >
-                {series.map(s => (
+                {series.map((s: any) => (
                   <option key={s.id} value={s.id}>
                     {s.code} {s.name ? `- ${s.name}` : ''}
                   </option>
@@ -246,7 +246,7 @@ export default function EditInvoicePage() {
                 className="w-full px-3 py-2 border rounded"
               >
                 <option value="">Sin cliente</option>
-                {customers.map(c => (
+                {customers.map((c: any) => (
                   <option key={c.id} value={c.id}>
                     {c.name} ({c.taxId})
                   </option>

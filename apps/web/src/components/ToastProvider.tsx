@@ -76,7 +76,7 @@ export function useToast() {
 function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: string) => void }) {
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm w-full pointer-events-none">
-      {toasts.map((toast) => (
+      {toasts.map((toast: any) => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
     </div>
